@@ -1,0 +1,168 @@
+﻿<%--
+Name:存储过程类
+Author: yingchun.han
+Description:SQLServer Update Procdure
+--%>
+
+<%@ CodeTemplate Language="C#" TargetLanguage="T-SQL" Description="Generate a update stored procedure." Encoding="UTF-8" %>
+<%@ Assembly Name="SchemaExplorer" %>
+<%@ Import Namespace="SchemaExplorer" %>
+<%@ Property Name="SourceTable" Type="SchemaExplorer.TableSchema" Category="Context" Description="Table that the stored procedures should be based on." %>
+
+
+-- ================================================
+-- generated  using code smith4.1
+-- CYKJ
+-- ================================================
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		<HYC>
+-- Create date: <2011-06-05>
+-- Description:	<op_<%= SourceTable.Name %>>
+-- =============================================
+
+CREATE PROCEDURE 
+[dbo].[op_<%= SourceTable.Name %>]
+(
+  @yhdlm VARCHAR(20), ---用户登陆名
+  ----@DataRowID INT OUTPUT,-- 返回数据行的行ID号
+  @iRESULT  INT OUTPUT,---返回值
+  @iERRCD  INT OUTPUT,---返回错误号
+  @sERRMSG  VARCHAR(200) OUTPUT,---返回错误信息
+  @sop  VARCHAR(10), ---操作命令
+<% for (int i=0; i<SourceTable.Columns.Count; i++) {%>
+  <%if(((bool)SourceTable.Columns[i].ExtendedProperties["CS_IsIdentity"].Value) == false || 1==1){%>
+  <%= GetSqlParameterStatement(SourceTable.Columns[i]) %> <% if (i<SourceTable.Columns.Count-1) {%>,<% } %>
+  <% }%>
+<% }%>
+)
+AS
+DECLARE @DataRowID INT 
+BEGIN
+    SET NOCOUNT ON
+	BEGIN TRY
+	SET @iRESULT = 0;
+    SET @iERRCD  = 0;
+    SET @sERRMSG = '';
+    BEGIN TRANSACTION
+    IF @sop='I'
+	BEGIN
+		INSERT INTO <%= SourceTable.Name %>
+		(
+		<% for(int i=0; i<SourceTable.Columns.Count; i++) {%>
+		<%if(((bool)SourceTable.Columns[i].ExtendedProperties["CS_IsIdentity"].Value) == false){%>
+    	<%= SourceTable.Columns[i].Name %>  <%if (i<SourceTable.Columns.Count-1) { %>,<% } %>
+    	<% } %>
+		<% } %>
+		)
+		VALUES
+	    (
+		<% for(int i=0; i<SourceTable.Columns.Count; i++) {%>
+    	<%if(((bool)SourceTable.Columns[i].ExtendedProperties["CS_IsIdentity"].Value) == false){%>
+		@<%= ToPascal(FieldsToEnglish(SourceTable.Columns[i].Name)) %><%if (i<SourceTable.Columns.Count-1) { %>,<% } %>
+    	<% } %>
+		<% } %>
+		);
+	END
+	IF @sop='U'
+	BEGIN
+		UPDATE <%= SourceTable.Name %> SET
+		<% for(int i=0; i<SourceTable.NonPrimaryKeyColumns.Count; i++) {%>
+		<%if(((bool)SourceTable.NonPrimaryKeyColumns[i].ExtendedProperties["CS_IsIdentity"].Value) == false){%>
+		<%= SourceTable.NonPrimaryKeyColumns[i].Name %> = @<%= ToPascal(FieldsToEnglish(SourceTable.NonPrimaryKeyColumns[i].Name)) %><% if (i<SourceTable.NonPrimaryKeyColumns.Count-1) { %>,<% } %>
+		<% } %>
+		<% } %>
+		WHERE
+		<% for(int i=0; i<SourceTable.PrimaryKey.MemberColumns.Count; i++) { %>
+		<%= SourceTable.PrimaryKey.MemberColumns[i].Name %> = @<%= ToPascal(FieldsToEnglish(SourceTable.PrimaryKey.MemberColumns[i].Name)) %>;
+		<% } %>
+	END
+	IF @sop='D'
+	BEGIN
+	   DELETE FROM <%= SourceTable.Name %>
+       WHERE  
+	   <% for(int i=0; i<SourceTable.PrimaryKey.MemberColumns.Count; i++) { %>
+		<%= SourceTable.PrimaryKey.MemberColumns[i].Name %> = @<%= ToPascal(FieldsToEnglish(SourceTable.PrimaryKey.MemberColumns[i].Name)) %>;
+		<% } %>
+	END
+	COMMIT TRANSACTION
+    IF @sop = 'I' Or @sop = 'U' 
+    BEGIN
+		SET @DataRowID = 0; --(SELECT RowID FROM <%= SourceTable.Name %> WHERE 
+		<% for(int i=0; i<SourceTable.PrimaryKey.MemberColumns.Count; i++) { %>
+		--<%= SourceTable.PrimaryKey.MemberColumns[i].Name %> = @<%= ToPascal(FieldsToEnglish(SourceTable.PrimaryKey.MemberColumns[i].Name)) %>);
+		<% } %>
+    END
+    ELSE
+    BEGIN
+        SET @DataRowID = 0;
+    END
+	END TRY
+        
+    BEGIN CATCH
+		ROLLBACK TRANSACTION 
+		SET @sERRMSG=(SELECT ERROR_MESSAGE());
+		SET @iERRCD=(SELECT ERROR_NUMBER());
+		SET @iRESULT = 1;
+    END CATCH
+END
+
+
+<script runat="template">
+
+#region Pascal命名法
+public string ToPascal(string s)
+{
+ return s.Substring(0,1).ToUpper()+s.Substring(1).ToUpper();
+}
+#endregion
+
+#region 骆驼命名法
+public string ToCamel(string s)
+{
+ return s.Substring(0,1).ToLower()+s.Substring(1).ToLower();
+}
+#endregion
+
+#region 返回字段
+public string FieldsToEnglish(string s)
+{
+	return s;
+}
+#endregion
+
+#region 根据列名获取SQL参数
+public string GetSqlParameterStatement(ColumnSchema column)
+{
+	string param="";
+	
+    	param = "@" + column.Name + " " +column.NativeType;
+    	switch(column.DataType)
+		{
+			case DbType.Decimal:
+			{
+				param += "(" + column.Precision + "," + column.Scale + ")";
+				break;
+			}
+			case DbType.AnsiString:
+			case DbType.AnsiStringFixedLength:
+			case DbType.String:
+			case DbType.StringFixedLength:
+			{
+				param += "(" + (column.Size==-1 ? "MAX" : column.Size.ToString()) + ")";
+				break;
+			}
+			default:
+			{
+				break;
+			}
+		}
+	
+    return param;
+}
+#endregion
+
+</script>

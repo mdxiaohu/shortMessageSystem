@@ -1,0 +1,1715 @@
+﻿<%--
+Name:实体类
+Author: yingchun.han
+Description:
+--%>
+
+<%@ CodeTemplate Language="C#" TargetLanguage="C#" Src="" Debug="true"   Description="Template description here." ResponseEncoding="UTF-8" %>
+<%@ Assembly Name="SchemaExplorer" %>
+<%@ Assembly Name="System.Data" %>
+<%@ Assembly Name="mscorlib" %>
+<%@ Assembly Name="CodeSmith.BaseTemplates" %>
+<%@ Import Namespace="SchemaExplorer" %>
+<%@ Import Namespace="System.Data" %>
+<%@ Import Namespace="System.Data.Common" %>
+<%@ Import Namespace="System.Collections.Generic" %>
+<%@ Import Namespace="CodeSmith.BaseTemplates" %>
+<%@ Property Name="SourceTable" Type="SchemaExplorer.TableSchema" Default="" Optional="False" Category="Table" Description="源表名" OnChanged="" Editor="" EditorBase="" Serializer="" %>
+<%@ Property Name="ProjectName" Type="System.String" Default="CYKJ" Optional="False" Category="Input" Description="项目名称" OnChanged="" Editor="" EditorBase="" Serializer="" %>
+<%@ Property Name="Author" Type="System.String" Default="yingchun.han" Optional="False" Category="Other" Description="作者" OnChanged="" Editor="" EditorBase="" Serializer="" %>
+
+#region <%=this.ProjectName%>.MODEL层
+
+#region <%=this.GetClassName()%>Model 实体类
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+using CykjSoft.UserPermissionManager.Utils;
+namespace <%=this.ProjectName%>.MODEL
+{
+
+    [Serializable]
+    public class <%=this.GetClassName()%>Model
+    {
+    
+    	/// <summary>
+        /// 数据操作类型,默认为浏览;
+        /// </summary>
+        private DataOperationType opType = DataOperationType.Browse;
+        /// <summary>
+        /// 数据操作类型,默认为浏览;
+        /// </summary> 
+        public DataOperationType OpType
+        { 
+            get { return opType; }
+            set { opType = value; }
+        }
+
+        /// <summary>
+        /// 表RowID号;
+        /// </summary>
+        private string _DataRowID = string.Empty;
+        /// <summary>
+        /// 表RowID号;
+        /// </summary>
+        public string DataRowID
+        {
+            get { return _DataRowID; }
+            set { _DataRowID = value; }
+        }
+		
+		/// <summary>
+        /// 当前路径;
+        /// </summary>
+        private string _CurrentNodePath = string.Empty;
+        /// <summary>
+        /// 当前路径;
+        /// </summary>
+        public string CurrentNodePath
+        {
+            get { return _CurrentNodePath; }
+            set { _CurrentNodePath = value; }
+        }
+		
+		/// <summary>
+        /// 用于范围查询的开始时间;
+        /// </summary>
+		private DateTime  _StartDate = DateTime.Parse("1900-01-01") ; 
+		/// <summary>
+        /// 用于范围查询的开始时间;
+        /// </summary>
+		public DateTime StartDate
+		{
+		    get { return _StartDate; }
+            set { _StartDate = value; }
+        }	
+		
+		/// <summary>
+        /// 用于范围查询的结束时间;
+        /// </summary>
+		private DateTime  _EndDate = DateTime.Parse("1900-01-01") ; 
+		/// <summary>
+        /// 用于范围查询的结束时间;
+        /// </summary>
+		public DateTime EndDate
+		{
+		    get { return _EndDate; }
+            set { _EndDate = value; }
+        }	
+		
+		<%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+		/// <summary>
+        /// 字段名：<%=column.Name %>
+		/// 类型名：<%=column.NativeType.ToString() %>
+		/// 字段长：<%=column.Precision.ToString() %>
+		/// 描述：<%=column.Description%>
+		<% if(column.NativeType.ToString() =="BLOB" || column.NativeType.ToString()=="CLOB") { %>
+		/// 页面传值：<%=this.GetClassName()%>Model.<%=column.Name %> = this.txtBox.Text.Trim();
+		/// 页面显示：this.txtBox.Text = System.Text.Encoding.Default.GetString((byte[])(ds.Tables[0].Rows[0]["<%=column.Name %>"]));
+		<% } %>
+        /// </summary>
+		 private   <%=this.GetCSharpVariableType(column)%> <%=this.GetModelVarName(column)%> = <%=GetDefaultValue(column)%>;
+		 public   <%=this.GetCSharpVariableType(column)%> <%=column.Name%>
+		{
+			 get { return <%=this.GetModelVarName(column)%>; }
+             set { <%=this.GetModelVarName(column)%> = value; }
+			}
+		
+		<%}%>
+	}
+}
+
+#endregion
+
+#endregion
+
+#region 数据访问层 <%=this.ProjectName%>.BLL
+
+#region <%=this.ProjectName%>.BLL层查询方法 query_<%=this.GetClassName()%>
+	/// <summary>
+	/// 查询<%=this.GetClassName()%>
+    /// query_<%=this.GetClassName()%>
+    /// 参数类名:<%=this.GetClassName()%>Model
+    /// </summary>
+    /// <returns>DataSet</returns>
+    public static DataSet query_<%=this.GetClassName()%>(
+          CykjSoft.Bean.UserBean userBean
+    	, <%=this.ProjectName%>.MODEL.<%=this.GetClassName()%>Model <%=this.GetClassName()%>
+    	, ref int V_ITOTALCOUNT //记录数
+    	, int V_SSTARTINDEX 	//开始索引
+    	, int V_SPERPAGESIZE 	//页大小
+        )
+    {
+        return <%=this.ProjectName%>.DBBusiness.DataBaseQuery.query_<%=this.GetClassName()%>(
+          userBean.YHDLM  //用户登陆名
+        , ref V_ITOTALCOUNT 	//记录数
+        , V_SSTARTINDEX 		//开始索引
+        , V_SPERPAGESIZE 		//页大小
+		<%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+		, <%=this.GetClassName()%>.<%=column.Name%>		//<%=column.Name %> <%=column.Description%>
+		<%}%>
+        , <%=this.GetClassName()%>.StartDate  			//开始时间
+        , <%=this.GetClassName()%>.EndDate  	 		//结束时间
+		);
+	}
+#endregion
+
+#region <%=this.ProjectName%>.BLL层操作方法 op_<%=this.GetClassName()%>
+	/// <summary>
+	/// 增删改<%=this.GetClassName()%>
+    /// op_<%=this.GetClassName()%>
+    /// 参数类名:<%=this.GetClassName()%>Model
+    /// </summary>
+    /// <returns>返回数</returns>
+    public static int op_<%=this.GetClassName()%>(
+         CykjSoft.Bean.UserBean userBean
+    	, <%=this.ProjectName%>.MODEL.<%=this.GetClassName()%>Model <%=this.GetClassName()%>
+        )
+    {
+        int iRESULT = 0;
+        int iERRCD = 0;
+        string sERRMSG = String.Empty;
+        try
+        {
+			<%=this.ProjectName%>.DBBusiness.DataBaseManager.op_<%=this.GetClassName()%>(
+			userBean.YHDLM  //用户登陆名
+            , ref  iRESULT
+            , ref  iERRCD
+            , ref  sERRMSG
+            , DataOperationTypeHelper.GetOperationString(<%=this.GetClassName()%>.OpType)
+			<%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+			, <%=this.GetClassName()%>.<%=column.Name%>		//<%=column.Name %> <%=column.Description%>
+			<%}%>
+			);
+        }
+        catch (Exception ex)
+        {
+            iRESULT = -1;
+            ex.ToString();
+        }
+        return iRESULT;
+	}
+#endregion
+
+#endregion
+
+#region 业务处理访问层 <%=this.ProjectName%>.DBBusiness
+
+#region <%=this.ProjectName%>.DBBusiness层 查询方法 query_<%=this.GetClassName()%>
+    public static DataSet query_<%=this.GetClassName()%>(
+          string V_YHDLM
+    	, ref int V_ITOTALCOUNT //记录数
+    	, int V_SSTARTINDEX 	//开始索引
+    	, int V_SPERPAGESIZE 	//页大小
+		<%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+		, <%=this.GetCSharpVariableType(column)%> V_<%=column.Name%>		//<%=column.Name %> <%=column.Description%>
+		<%}%>
+		, DateTime V_StartDate
+		, DateTime V_EndDate
+        )
+	{
+        string mConn = IConfiguration.getParameter("connectString");
+        IDBOSQL.IDBO dbo = IDBOSQL.IDBO.getIDBO(mConnBase);
+        try
+        {
+            dbo.openDatabase();
+            dbo.BeginTransaction();
+            IPrameter[] pms = new IPrameter[<%=this.SourceTable.Columns.Count+4+2 %>];
+            pms[0] = new IPrameter("@YHDLM", IDataType.VarChar, ParameterDirection.Input);
+            pms[0].Value = V_YHDLM;
+            pms[1] = new IPrameter("@iTotalCount", IDataType.Number, ParameterDirection.InputOutput);
+            pms[1].Value = V_ITOTALCOUNT;
+            pms[2] = new IPrameter("@sStartIndex", IDataType.Number, ParameterDirection.Input);
+            pms[2].Value = V_SSTARTINDEX;
+            pms[3] = new IPrameter("@sPerPageSize", IDataType.Number, ParameterDirection.Input);
+            pms[3].Value = V_SPERPAGESIZE;
+            <%="int i=3;" %>
+			<%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+			<%="i=i+1;" %>
+            pms[<%="i" %>] = new IPrameter("@<%=column.Name%>", IDataType.<%=this.GetIDataType(column)%>, ParameterDirection.Input);
+            pms[<%="i" %>].Value = V_<%=column.Name%>;
+			<%}%>
+			
+			<%="i=i+1;" %>
+            pms[<%="i" %>] = new IPrameter("@StartDate", IDataType.DateTime, ParameterDirection.Input);
+            pms[<%="i" %>].Value = V_StartDate;
+			<%="i=i+1;" %>
+            pms[<%="i" %>] = new IPrameter("@EndDate", IDataType.DateTime, ParameterDirection.Input);
+            pms[<%="i" %>].Value = V_EndDate;
+				
+			DataSet ds = dbo.executeProcedure("query_<%= SourceTable.Name %>", pms);
+            dbo.CommitTransaction();
+            V_ITOTALCOUNT = int.Parse(pms[1].Value.ToString());
+            return ds;
+        }
+        catch (Exception e)
+        {
+            iLog.Error(e.Message.ToString());
+            //throw e;
+			V_ITOTALCOUNT =0;
+            return null;
+        }
+        finally
+        {
+            dbo.closeDatabase();
+        }
+	}
+#endregion
+
+#region <%=this.ProjectName%>.DBBusiness层 操作方法 op_<%=this.GetClassName()%>
+    public static void op_<%=this.GetClassName()%>(
+		  string V_YHDLM  //用户名
+		, ref int V_IRESULT //返回值
+		, ref int V_IERRCD  //返回错误号
+		, ref string V_SERRMSG //返回错误信息
+        , string V_SOP //操作类型
+		<%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+		, <%=this.GetCSharpVariableType(column)%> V_<%=column.Name%>		//<%=column.Name %> <%=column.Description%>
+		<%}%>
+        )
+	{
+        string mConn = IConfiguration.getParameter("connectString");
+        IDBOSQL.IDBO dbo = IDBOSQL.IDBO.getIDBO(mConn);
+        try
+        {
+            dbo.openDatabase();
+            dbo.BeginTransaction();
+            IPrameter[] pms = new IPrameter[<%=this.SourceTable.Columns.Count+5 %>];
+            pms[0] = new IPrameter("@YHDLM", IDataType.VarChar, ParameterDirection.Input);
+            pms[0].Value = V_YHDLM;
+            pms[1] = new IPrameter("@IRESULT", IDataType.Number, ParameterDirection.Output);
+            pms[1].Size = 4;
+            pms[2] = new IPrameter("@IERRCD", IDataType.Number, ParameterDirection.Output);
+            pms[2].Size = 4;
+            pms[3] = new IPrameter("@SERRMSG", IDataType.VarChar, ParameterDirection.Output);
+            pms[3].Size = 1024;
+            pms[4] = new IPrameter("@SOP", IDataType.VarChar, ParameterDirection.Input);
+            pms[4].Value = V_SOP;
+			
+            <%="int i=4;" %>
+			<%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+			<%="i=i+1;" %>
+            pms[<%="i" %>] = new IPrameter("@<%=column.Name%>", IDataType.<%=this.GetIDataType(column)%>, ParameterDirection.Input);
+            pms[<%="i" %>].Value = V_<%=column.Name%>;
+			<%}%>
+			
+            dbo.executeFunction("op_<%= SourceTable.Name %>", pms);
+            dbo.CommitTransaction();
+            V_IRESULT = int.Parse(pms[1].Value.ToString());
+            V_IERRCD = int.Parse(pms[2].Value.ToString());
+            V_SERRMSG = pms[3].Value.ToString();
+        }
+        catch (Exception e)
+        {
+            iLog.Error(e.Message.ToString());
+            //throw e;
+            V_IRESULT = -1;
+            V_IERRCD = -1;
+            V_SERRMSG = e.Message.ToString();
+            return;
+        }
+        finally
+        {
+            dbo.closeDatabase();
+        }
+	}
+#endregion
+
+#endregion
+
+
+
+#region WEB维护页面 frm<%=this.GetClassName()%>.aspx
+
+#region 前台页面 frm<%=this.GetClassName()%>.aspx //新建frm<%=this.GetClassName()%>.fx页面
+
+<%WriteSpecchar("<%@");%> Page Language="C#" AutoEventWireup="true" CodeBehind="frm<%=this.GetClassName()%>.aspx.cs" Inherits="<%=this.ProjectName%>.frm<%=this.GetClassName()%>" <%WriteSpecchar("i");%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <title><%=this.GetClassName() %>维护页面</title>
+</head>
+<body>
+    <form id="form1" runat="server">
+    <f:PageManager ID="PageManager1"  AutoSizePanelID="Panel1" runat="server" />
+    <f:Panel ID="Panel1" runat="server" BodyPadding="5px"  
+            ShowBorder="false" Layout="VBox" BoxConfigAlign="Stretch" BoxConfigPosition="Start"
+            ShowHeader="false" Title="用户管理">
+            <Items>
+                <f:Form ID="Form2" runat="server" Height="36px" BodyPadding="5px" ShowHeader="false"
+                    ShowBorder="false" LabelAlign="Right" >
+                    <Rows>
+                        <f:FormRow ID="FormRow1" runat="server">
+                            <Items>
+                                <f:TwinTriggerBox ID="ttbSearchMessage" runat="server" ShowLabel="false" EmptyText="在通知名称中搜索"
+                                    Trigger1Icon="Clear" Trigger2Icon="Search" ShowTrigger1="false" OnTrigger2Click="ttbSearchMessage_Trigger2Click"
+                                    OnTrigger1Click="ttbSearchMessage_Trigger1Click">
+                                </f:TwinTriggerBox>
+                            </Items>
+                        </f:FormRow>
+                    </Rows>
+                </f:Form>
+				 <f:Grid ID="Grid1" runat="server" BoxFlex="1" ShowBorder="true" ShowHeader="false"
+                    EnableCheckBoxSelect="true" 
+                    DataKeyNames="SerialNO" AllowSorting="true" OnSort="Grid1_Sort"  SortField="SerialNO"
+                    SortDirection="DESC" AllowPaging="true" IsDatabasePaging="true" OnPreDataBound="Grid1_PreDataBound"
+                    OnRowCommand="Grid1_RowCommand" OnPageIndexChange="Grid1_PageIndexChange">
+                    <Toolbars>
+                        <f:Toolbar ID="Toolbar1" runat="server">
+                            <Items>
+                                <f:Button ID="btnNew" runat="server" Icon="Add" EnablePostBack="false" Text="新增科研通知">
+                                </f:Button>                   
+                                <f:ToolbarSeparator ID="ToolbarSeparator1" runat="server">
+                                </f:ToolbarSeparator>
+                                <f:ToolbarFill ID="ToolbarFill1" runat="server">
+                                </f:ToolbarFill>
+                                <f:Button ID="btnDeleteSelected" Icon="Delete" runat="server" Text="删除选中记录" OnClick="btnDeleteSelected_Click">
+                                </f:Button>
+                            </Items>
+                        </f:Toolbar>
+                    </Toolbars>
+                    <PageItems>
+                        <f:ToolbarSeparator ID="ToolbarSeparator2" runat="server">
+                        </f:ToolbarSeparator>
+                        <f:ToolbarText ID="ToolbarText1" runat="server" Text="每页记录数：">
+                        </f:ToolbarText>
+                        <f:DropDownList ID="ddlGridPageSize" Width="80px" AutoPostBack="true" OnSelectedIndexChanged="ddlGridPageSize_SelectedIndexChanged"
+                            runat="server">
+                            <f:ListItem Text="10" Value="10" />
+                            <f:ListItem Text="20" Value="20" />
+                            <f:ListItem Text="50" Value="50" />
+                            <f:ListItem Text="100" Value="100" />
+                        </f:DropDownList>
+                    </PageItems>
+					<Columns>
+						<f:RowNumberField Width="35px" EnablePagingNumber="true" />
+						<%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+							<% if(column.DataType==DbType.Date || column.DataType==DbType.DateTime || column.DataType==DbType.DateTime2) { %>
+								<f:BoundField DataField="<%=column.Name %>" HeaderText="<%=column.Description.Trim()!=""?column.Description.Trim():column.Name %>"  DataFormatString="{0:yyyy-MM-dd}" HtmlEncode="false">
+								</f:BoundField>
+							<% } else {%>
+								<f:BoundField DataField="<%=column.Name %>" HeaderText="<%=column.Description.Trim()!=""?column.Description.Trim():column.Name %>" Width="200px">
+								</f:BoundField>
+										<%}%>
+						<%}%>
+                        <f:WindowField TextAlign="Center" Icon="Pencil" ToolTip="修改信息" Title="修改信息" 
+                            WindowID="Window1" DataIFrameUrlFields="SerialNO" DataIFrameUrlFormatString="frm<%=this.GetClassName()%>Edit.aspx?<%=GetPrimaryKeyName2(this.SourceTable) %>={0}"
+                            Width="50px" HeaderText="修改"  />
+                        <f:WindowField TextAlign="Center" Icon="Information" ToolTip="查看详细信息" Title="查看详细信息"
+                            WindowID="Window1" DataIFrameUrlFields="SerialNO" DataIFrameUrlFormatString="frm<%=this.GetClassName()%>XX.aspx?<%=GetPrimaryKeyName2(this.SourceTable) %>={0}"
+                            Width="50px" HeaderText="详情"  />
+					</Columns>
+                </f:Grid>
+            </Items>
+        </f:Panel>
+        <f:Window ID="Window1" runat="server" IsModal="true" Hidden="true" Target="Top" EnableResize="true"
+            EnableMaximize="true" EnableIFrame="true" IFrameUrl="about:blank" Width="800px"
+            Height="500px" OnClose="Window1_Close">
+        </f:Window>
+    </form>
+    <script type="text/javascript">
+       var basePath = <%WriteSpecchar("'<%=");%>ResolveUrl("~/") %>';        
+        function Open_TabTest(tabID, url, title) {
+            parent.addExampleTab.apply(null, [tabID, basePath + url, title, basePath + 'res/icon/tag_blue.png', true]);
+        }
+        function closeActiveTab() {
+                parent.removeActiveTab();
+            }
+   </script>
+</body>
+</html>
+#endregion
+
+#region 后台代码 frm<%=this.GetClassName()%>.aspx.cs //以下为代码内容复制到.cs文件中
+
+using System;
+using System.Collections.Generic;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using FineUI;
+using System.Data;
+using CykjSoft.Bean;
+using CykjSoft.UserPermissionManager.Bean;
+using CykjSoft.UserPermissionManager.Business;
+using CykjSoft.UserPermissionManager.Utils;
+
+namespace <%=this.ProjectName%>
+{
+    public partial class frm<%=this.GetClassName()%> : PageBase
+    {
+        #region 浏览权限
+        /// <summary>
+        /// 本页面的浏览权限，空字符串表示本页面不受权限控制
+        /// </summary>
+        public override string ViewPower
+        {
+            get
+            {
+                return "CoreKytzView";
+            }
+        }        
+        #endregion
+        
+        #region 定义对象
+        int V_ITOTALCOUNT = -1;
+        int V_SSTARTINDEX = 0;
+        int V_SPERPAGESIZE = 1000;
+        private <%=this.ProjectName%>.MODEL.<%=this.GetClassName()%>Model model = new <%=this.ProjectName%>.MODEL.<%=this.GetClassName()%>Model();
+        CykjSoft.Bean.UserBean userBean = new CykjSoft.Bean.UserBean();        
+        #endregion
+    
+        #region 页面加载
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (!IsPostBack)
+            {
+                //手动添加需要绑定的内容
+                LoadData();
+            }
+        }
+        #endregion
+        
+        #region 手动添加需要绑定的内容
+        private void LoadData()
+        {
+           CheckPowerWithButton("CoreKytzDelete", btnDeleteSelected);
+            CheckPowerWithButton("CoreKytzNew", btnNew);
+            //删除按钮提示事件
+            ResolveDeleteButtonForGrid(btnDeleteSelected, Grid1);
+
+            btnNew.OnClientClick = Window1.GetShowReference("frm<%=this.GetClassName()%>New.fx", "");
+
+            // 每页记录数
+            Grid1.PageSize = PageBase.PageSize;
+            ddlGridPageSize.SelectedValue = PageBase.PageSize.ToString();
+            
+            BindGrid();
+        }
+        //数据绑定
+        private void BindGrid()
+        {
+            try
+            {
+                //给搜索条件赋值
+                if (!string.IsNullOrEmpty(this.ttbSearchMessage.Text.ToString()))
+                {
+                    
+                }
+                // 1.设置总项数（特别注意：数据库分页一定要设置总记录数RecordCount）
+                Grid1.RecordCount = GetTotalCount();
+                // 2.获取当前分页数据
+                DataTable table = GetPagedDataTable();
+                // 3.绑定到Grid
+                Grid1.DataSource = table;
+                Grid1.DataBind();
+            }
+            catch (Exception ex)
+            {
+                Alert.ShowInTop(ex.Message);
+            }
+        }
+        //获取数据将数据存入DataTable，分页自动完成，其余页面只需要将新数据赋给DataTable
+        protected DataTable GetDataTable()
+        {         
+            model.StartDate = DateTime.Parse("1900-01-01");
+            model.EndDate = DateTime.Now;
+            DataTable table = new DataTable();
+            DataSet ds = <%=this.ProjectName%>.BLL.DataBaseQuery.query_<%=this.GetClassName()%>(userBean, model, ref  V_ITOTALCOUNT, V_SSTARTINDEX, V_SPERPAGESIZE);
+            if (ds != null && ds.Tables.Count > 0 && ds.Tables[0] != null && ds.Tables[0].Rows.Count > 0)
+            {
+                table = ds.Tables[0];
+            }
+            return table;
+        }
+        //返回总项数
+        private int GetTotalCount()
+        {
+            return GetDataTable().Rows.Count;
+        }
+        
+        //数据库分页
+        private DataTable GetPagedDataTable()
+        {
+            int pageIndex = Grid1.PageIndex;
+            int pageSize = Grid1.PageSize;
+            string sortField = Grid1.SortField;
+            string sortDirection = Grid1.SortDirection;
+            DataTable table2 = GetDataTable();
+            DataView view2 = table2.DefaultView;
+            view2.Sort = String.Format("{0} {1}", sortField, sortDirection);
+            DataTable table = view2.ToTable();
+            DataTable paged = table.Clone();
+            int rowbegin = pageIndex * pageSize;
+            int rowend = (pageIndex + 1) * pageSize;
+            if (rowend > table.Rows.Count)
+            {
+                rowend = table.Rows.Count;
+            }
+            for (int i = rowbegin; i < rowend; i++)
+            {
+                paged.ImportRow(table.Rows[i]);
+            }
+            return paged;
+        }
+        
+        #endregion
+        
+        #region 控件事件
+
+        protected void ttbSearchMessage_Trigger2Click(object sender, EventArgs e)
+        {
+            ttbSearchMessage.ShowTrigger1 = true;
+            BindGrid();
+        }
+
+        protected void ttbSearchMessage_Trigger1Click(object sender, EventArgs e)
+        {
+            ttbSearchMessage.Text = String.Empty;
+            ttbSearchMessage.ShowTrigger1 = false;
+            BindGrid();
+        }
+
+        protected void Grid1_PreDataBound(object sender, EventArgs e)
+        {
+            // 数据绑定之前，进行权限检查，主要针对Grid中的删除、编辑、删除
+            CheckPowerWithWindowField("CoreKytzEdit", Grid1, "editField");
+            CheckPowerWithLinkButtonField("CoreKytzDelete", Grid1, "deleteField");
+        }
+
+        protected void Grid1_Sort(object sender, GridSortEventArgs e)
+        {
+            Grid1.SortDirection = e.SortDirection;
+            Grid1.SortField = e.SortField;
+            BindGrid();
+        }
+
+        protected void Grid1_PageIndexChange(object sender, GridPageEventArgs e)
+        {
+            Grid1.PageIndex = e.NewPageIndex;
+            BindGrid();
+        }
+        protected void btnDeleteSelected_Click(object sender, EventArgs e)
+        {
+            // 在操作之前进行权限检查
+            if (!CheckPower("CoreKytzDelete"))
+            {
+                CheckPowerFailWithAlert();
+                return;
+            }
+            // 从每个选中的行中获取ID（在Grid1中定义的DataKeyNames）
+            List<int> ids = GetSelectedDataKeyIDs(Grid1);
+            // 执行数据库操作
+            foreach (int id in ids)
+            {
+                model.SerialNO = id;
+                model.OpType = DataOperationType.Delete;
+                <%=this.ProjectName%>.BLL.DataBaseManager.op_<%=this.GetClassName()%>(userBean, model);
+            }
+            // 重新绑定表格
+            //删除成功后，给ID重新初始化，否则ID的值仍然是刚删除记录之后的ID，会出错!
+            model.SerialNO = 0;
+            BindGrid();
+        }
+        protected void Grid1_RowCommand(object sender, GridCommandEventArgs e)
+        { 
+            int ID = GetSelectedDataKeyID(Grid1);
+            //string userName = GetSelectedDataKey(Grid1, 1);
+            if (e.CommandName == "Delete")
+            {
+                // 在操作之前进行权限检查
+                if (!CheckPower("CoreKytzDelete"))
+                {
+                    CheckPowerFailWithAlert();
+                    return;
+                }
+                model.SerialNO = ID;
+                model.OpType = DataOperationType.Delete;
+                if (<%=this.ProjectName%>.BLL.DataBaseManager.op_<%=this.GetClassName()%>(userBean,model) == 0)
+                {   //删除成功后，给ID重新初始化，否则ID的值仍然是刚删除记录之后的ID，会出错!
+                    model.SerialNO = 0;
+                    BindGrid();//重新绑定
+                    Alert.ShowInTop("删除成功！");
+                }
+                else
+                {
+                    Alert.ShowInTop("删除失败!");
+                }             
+            }
+            if (e.CommandName == "ViewXQ")
+            {                string URL = "~/frm<%=this.GetClassName()%>XQ.fx?id=" + ID;
+                PageContext.RegisterStartupScript("Open_TabTest('test','" + URL + "','test');");
+            }            
+        }
+        protected void Window1_Close(object sender, EventArgs e)
+        {
+            BindGrid();
+        }
+
+        protected void ddlGridPageSize_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            Grid1.PageSize = Convert.ToInt32(ddlGridPageSize.SelectedValue);
+
+            BindGrid();
+        }
+
+        #endregion
+    }   
+}
+
+#endregion
+
+#endregion
+
+#region WEB操作页面 frm<%=this.GetClassName()%>New.aspx 
+
+#region 前台新增页面 frm<%=this.GetClassName()%>New.aspx frm<%=this.GetClassName()%>Edit.aspx 
+
+<%WriteSpecchar("<%@");%> Page Language="C#" AutoEventWireup="true" CodeBehind="frm<%=this.GetClassName()%>New.aspx.cs" Inherits="<%=this.ProjectName%>.frm<%=this.GetClassName()%>New" <%WriteSpecchar("i");%>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1" runat="server">
+    <title><%=this.GetClassName() %>编辑</title>
+</head>
+<body>
+    <form id="form1" runat="server">
+        <f:PageManager ID="PageManager1" AutoSizePanelID="Panel1" runat="server" />
+        <f:Panel ID="Panel1" ShowBorder="false" ShowHeader="false"  AutoScroll="true" runat="server">
+            <Toolbars>
+                <f:Toolbar ID="Toolbar1" runat="server">
+                    <Items>
+                        <f:Button ID="btnClose" Icon="SystemClose" EnablePostBack="false" runat="server"
+                            Text="关闭">
+                        </f:Button>
+                        <f:ToolbarSeparator ID="ToolbarSeparator2" runat="server">
+                        </f:ToolbarSeparator>
+                        <f:Button ID="btnSaveClose" ValidateForms="SimpleForm1" Icon="SystemSaveClose"
+                            OnClick="btnSaveClose_Click" runat="server" Text="保存后关闭">
+                        </f:Button>
+                    </Items>
+                </f:Toolbar>
+            </Toolbars>
+            <Items>
+                <f:SimpleForm ID="SimpleForm1" ShowBorder="false" ShowHeader="false" runat="server"
+                    BodyPadding="10px"  Title="SimpleForm">
+                    <Items>
+                        <% int i=0; %>
+                        <% string strColumns=""; %>
+                        <%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+                                <%=GetDefaultControl(column) %>
+                        <%}%>
+		            </Items>
+                </f:SimpleForm>
+            </Items>
+        </f:Panel>
+    </form>
+</body>
+</html>
+
+#endregion
+
+#region 后台新增代码 frm<%=this.GetClassName()%>New.aspx.cs //以下为代码内容复制到.cs文件中
+
+using System;
+using System.Collections.Generic;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Linq;
+using System.Data;
+using FineUI;
+using CykjSoft.UserPermissionManager.Utils;
+using <%=this.ProjectName%>.BLL;
+using <%=this.ProjectName%>.MODEL;
+
+namespace <%=this.ProjectName%>
+{
+    public partial class frm<%=this.GetClassName()%>New : PageBase
+    {
+        #region ViewPower
+
+        /// <summary>
+        /// 本页面的浏览权限，空字符串表示本页面不受权限控制
+        /// </summary>
+        public override string ViewPower
+        {
+            get
+            {
+                return "CoreKytzNew";
+            }
+        }
+        #endregion
+        
+        #region 定义对象
+        int V_ITOTALCOUNT = -1;
+        int V_SSTARTINDEX = 0;
+        int V_SPERPAGESIZE = 1000;
+        private <%=this.ProjectName%>.MODEL.<%=this.GetClassName()%>Model model = new <%=this.ProjectName%>.MODEL.<%=this.GetClassName()%>Model();
+        CykjSoft.Bean.UserBean userBean = new CykjSoft.Bean.UserBean();
+        #endregion
+        
+        #region 页面加载
+    
+        protected override void OnLoad(EventArgs e)
+        {
+            if (!Page.IsPostBack)
+            {
+                btnClose.OnClientClick = ActiveWindow.GetHideReference();                
+            }
+        }    
+        #endregion    
+        
+        #region 保存按钮事件
+        /// <summary>
+        /// 保存按钮事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected void btnSaveClose_Click(object sender, EventArgs e)
+        {            
+            try
+            {
+                <%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+                <% if(column.IsPrimaryKeyMember==false){ %>
+                model.<%=column.Name %> = <%=GetDefaultControlValue(column) %>;
+                <% } %>
+                <% } %>
+                
+                model.OpType = DataOperationType.Add;
+                if (<%=this.ProjectName%>.BLL.DataBaseManager.op_<%=this.GetClassName()%>(userBean, model) == 0)
+                {
+                    Alert.ShowInTop("新增成功！");
+                }
+                else
+                {
+                    Alert.ShowInTop("新增失败!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Alert.ShowInTop(ex.Message);
+            }
+            PageContext.RegisterStartupScript(ActiveWindow.GetHidePostBackReference());
+           
+        }
+        #endregion
+    }
+}
+#endregion
+
+
+#region 前台修改页面 frm<%=this.GetClassName()%>New.aspx frm<%=this.GetClassName()%>Edit.aspx 
+
+<%WriteSpecchar("<%@");%> Page Language="C#" AutoEventWireup="true" CodeBehind="frm<%=this.GetClassName()%>Edit.aspx.cs" Inherits="<%=this.ProjectName%>.frm<%=this.GetClassName()%>Edit" <%WriteSpecchar("i");%>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1" runat="server">
+    <title><%=this.GetClassName() %>编辑</title>
+</head>
+<body>
+    <form id="form1" runat="server">
+        <f:PageManager ID="PageManager1" AutoSizePanelID="Panel1" runat="server" />
+        <f:Panel ID="Panel1" ShowBorder="false" ShowHeader="false"  AutoScroll="true" runat="server">
+            <Toolbars>
+                <f:Toolbar ID="Toolbar1" runat="server">
+                    <Items>
+                        <f:Button ID="btnClose" Icon="SystemClose" EnablePostBack="false" runat="server"
+                            Text="关闭">
+                        </f:Button>
+                        <f:ToolbarSeparator ID="ToolbarSeparator2" runat="server">
+                        </f:ToolbarSeparator>
+                        <f:Button ID="btnSaveClose" ValidateForms="SimpleForm1" Icon="SystemSaveClose"
+                            OnClick="btnSaveClose_Click" runat="server" Text="保存后关闭">
+                        </f:Button>
+                    </Items>
+                </f:Toolbar>
+            </Toolbars>
+            <Items>
+                <f:SimpleForm ID="SimpleForm1" ShowBorder="false" ShowHeader="false" runat="server"
+                    BodyPadding="10px"  Title="SimpleForm">
+                    <Items>
+                        <% int j=0; %>
+                        <%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+                                <%=GetDefaultControl(column) %>
+                        <%}%>
+		            </Items>
+                </f:SimpleForm>
+            </Items>
+        </f:Panel>
+    </form>
+</body>
+</html>
+
+#endregion
+
+#region 后台修改代码 frm<%=this.GetClassName()%>Edit.aspx.cs //以下为代码内容复制到.cs文件中
+
+using System;
+using System.Collections.Generic;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Linq;
+using System.Data;
+using FineUI;
+using CykjSoft.UserPermissionManager.Utils;
+using <%=this.ProjectName%>.BLL;
+using <%=this.ProjectName%>.MODEL;
+
+namespace <%=this.ProjectName%>
+{
+    public partial class frm<%=this.GetClassName()%>Edit : PageBase
+    {
+        #region ViewPower
+
+        /// <summary>
+        /// 本页面的浏览权限，空字符串表示本页面不受权限控制
+        /// </summary>
+        public override string ViewPower
+        {
+            get
+            {
+                return "CoreKytzNew";
+            }
+        }
+        #endregion
+        
+        #region 定义对象
+        int V_ITOTALCOUNT = -1;
+        int V_SSTARTINDEX = 0;
+        int V_SPERPAGESIZE = 1000;
+        private <%=this.ProjectName%>.MODEL.<%=this.GetClassName()%>Model model = new <%=this.ProjectName%>.MODEL.<%=this.GetClassName()%>Model();
+        CykjSoft.Bean.UserBean userBean = new CykjSoft.Bean.UserBean();
+        #endregion
+        
+        #region 页面加载
+    
+        protected override void OnLoad(EventArgs e)
+        {
+            if (!Page.IsPostBack)
+            {
+                btnClose.OnClientClick = ActiveWindow.GetHideReference();
+                if (Request.QueryString["<%=GetPrimaryKeyName2(this.SourceTable) %>"] != null && Request.QueryString["<%=GetPrimaryKeyName2(this.SourceTable) %>"].ToString().Trim() != "")
+                {
+                    <%=this.ProjectName%>.MODEL.<%=this.GetClassName()%>Model temp = new <%=this.ProjectName%>.MODEL.<%=this.GetClassName()%>Model();
+                    temp.SerialNO = int.Parse(Request.QueryString["<%=GetPrimaryKeyName2(this.SourceTable) %>"].ToString().Trim());
+                    int iCount = -1;
+                    DataSet ds = <%=this.ProjectName%>.BLL.DataBaseQuery.query_<%=this.GetClassName()%>(userBean, temp, ref iCount, 0, 10);
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0] != null && ds.Tables[0].Rows.Count > 0)
+                    {
+                        DataRow dr= ds.Tables[0].Rows[0];
+                        <%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+                        <% if(column.DataType==DbType.Date || column.DataType==DbType.DateTime || column.DataType==DbType.DateTime2) { %>
+                        <%=SetDefaultControlValue(column) %> = DateTime.Parse(dr["<%=column.Name %>"].ToString()) ;
+                        <% } else { %>
+                        <%=SetDefaultControlValue(column) %> = dr["<%=column.Name %>"].ToString() ;
+                        <% } %>
+                        <% } %>
+                    }
+                    else
+                    {
+                        <%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+                        <% if(column.DataType==DbType.Date || column.DataType==DbType.DateTime || column.DataType==DbType.DateTime2) { %>
+                        <%=SetDefaultControlValue(column) %> = DateTime.Now ;
+                        <% } else if(column.IsPrimaryKeyMember==true){ %>
+                        //<%=SetDefaultControlValue(column) %> ="0" ;
+                        <% } %>
+                        <% } %>
+                    }
+                }
+                else
+                {
+                    <%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+                    <% if(column.DataType==DbType.Date || column.DataType==DbType.DateTime || column.DataType==DbType.DateTime2) { %>
+                    <%=SetDefaultControlValue(column) %> = DateTime.Now ;
+                    <% } else if(column.IsPrimaryKeyMember==true){ %>
+                    //<%=SetDefaultControlValue(column) %> ="0" ;
+                    <% } %>
+                    <% } %>
+                }
+            }
+        }
+    
+        #endregion
+    
+        #region 保存按钮事件
+        /// <summary>
+        /// 保存按钮事件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected void btnSaveClose_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                <%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+                model.<%=column.Name %> = <%=GetDefaultControlValue(column) %>;
+                <% } %>
+                
+                model.OpType = DataOperationType.Modify;
+                if (<%=this.ProjectName%>.BLL.DataBaseManager.op_<%=this.GetClassName()%>(userBean, model) == 0)
+                {
+                    Alert.ShowInTop("修改成功！");
+                }
+                else
+                {
+                    Alert.ShowInTop("修改失败!");
+                }
+            }
+             catch (Exception ex)
+            {
+                Alert.ShowInTop(ex.Message);
+            }
+            PageContext.RegisterStartupScript(ActiveWindow.GetHidePostBackReference());
+        }
+        #endregion
+    }
+}
+#endregion
+
+#endregion
+
+
+#region WEB详情页面 frm<%=this.GetClassName()%>XX.aspx
+
+#region 前台页面 frm<%=this.GetClassName()%>XX.aspx //新建frm<%=this.GetClassName()%>XX.fx详情页面
+
+<%WriteSpecchar("<%@");%> Page Language="C#" AutoEventWireup="true" CodeBehind="frm<%=this.GetClassName()%>XX.aspx.cs" Inherits="<%=this.ProjectName%>.frm<%=this.GetClassName()%>XX" <%WriteSpecchar("i");%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1" runat="server">
+    <title><%=this.GetClassName() %>详情页面</title>
+</head>
+<body>
+    <form id="form1" runat="server">
+        <f:PageManager ID="PageManager1" AutoSizePanelID="Panel1" runat="server" />
+        <f:Panel ID="Panel1" ShowBorder="false" ShowHeader="false"  AutoScroll="true" runat="server">
+            <Toolbars>
+                <f:Toolbar ID="Toolbar1" runat="server">
+                    <Items>
+                        <f:Button ID="btnClose" Icon="SystemClose" EnablePostBack="false" runat="server"
+                            Text="关闭">
+                        </f:Button>
+                        <f:ToolbarSeparator ID="ToolbarSeparator2" runat="server">
+                        </f:ToolbarSeparator>
+                    </Items>
+                </f:Toolbar>
+            </Toolbars>
+            <Items>
+                <f:SimpleForm ID="SimpleForm1" ShowBorder="false" ShowHeader="false" runat="server"
+                    BodyPadding="10px"  Title="SimpleForm">
+                    <Items>
+                        <%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+                                <f:Label id="lbl<%=GetDefaultControlName(column) %>" runat="server" Label="<%=GetDefaultControlName(column) %>" />
+                        <%}%>
+		            </Items>
+                </f:SimpleForm>
+            </Items>
+        </f:Panel>
+    </form>
+</body>
+</html>
+
+#endregion
+
+#region 后台代码 frm<%=this.GetClassName()%>XX.aspx.cs //以下为代码内容复制到.cs文件中
+
+using System;
+using System.Collections.Generic;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Linq;
+using System.Data;
+using FineUI;
+using CykjSoft.UserPermissionManager.Utils;
+using <%=this.ProjectName%>.BLL;
+using <%=this.ProjectName%>.MODEL;
+namespace  <%=this.ProjectName%>
+{
+    public partial class frm<%=this.GetClassName()%>XX : PageBase
+    {
+        #region ViewPower
+    
+            /// <summary>
+            /// 本页面的浏览权限，空字符串表示本页面不受权限控制
+            /// </summary>
+            public override string ViewPower
+            {
+                get
+                {
+                    return "";
+                }
+            }
+        #endregion
+        
+        #region 初始化变量
+            int V_ITOTALCOUNT = -1;
+            int V_SSTARTINDEX = 0;
+            int V_SPERPAGESIZE = 1000;
+            private XASYU.MODEL.TABLE_KYTZModel Table_XYBM = new MODEL.TABLE_KYTZModel();
+            //static DateTime startdate = DateTime.Parse("1900-01-01");
+            //static DateTime enddate = DateTime.Now.Date.AddDays(1).AddSeconds(-1);
+            CykjSoft.Bean.UserBean userBean = new CykjSoft.Bean.UserBean();
+        #endregion
+            
+        #region 页面加载    
+        protected void Page_Load(object sender, EventArgs e)
+        {        
+            if (!Page.IsPostBack)
+            {
+                btnClose.OnClientClick = ActiveWindow.GetHideReference();
+    
+                if (Request.QueryString["<%=GetPrimaryKeyName2(this.SourceTable) %>"] != null && Request.QueryString["<%=GetPrimaryKeyName2(this.SourceTable) %>"].ToString().Trim() != "")
+                {
+                    <%=this.ProjectName%>.MODEL.<%=this.GetClassName()%>Model temp = new <%=this.ProjectName%>.MODEL.<%=this.GetClassName()%>Model();
+                    temp.SerialNO = int.Parse(Request.QueryString["<%=GetPrimaryKeyName2(this.SourceTable) %>"].ToString().Trim());                   
+                    int iCount = -1;
+                    DataSet ds = <%=this.ProjectName%>.BLL.DataBaseQuery.query_<%=this.GetClassName()%>(userBean, temp, ref iCount, 0, 10);
+                    if (ds != null && ds.Tables.Count > 0 && ds.Tables[0] != null && ds.Tables[0].Rows.Count > 0)
+                    {
+                        DataRow dr= ds.Tables[0].Rows[0];
+                        <%foreach(ColumnSchema column in this.SourceTable.Columns){%>
+                        <%if((bool)column.IsPrimaryKeyMember == true){ %>
+                        <%=GetDefaultControlName(column) %>.Value = dr["<%=column.Name %>"].ToString() ;
+                        <% }else { %>
+                        lbl<%=GetDefaultControlName(column) %>.Text = dr["<%=column.Name %>"].ToString() ;
+                        <% }} %>
+                    }                
+                }          
+            }
+        }
+        #endregion
+    }
+}
+#endregion
+
+#endregion
+
+
+
+<script runat="template">
+#region Pascal命名法
+public string ToPascal(string s)
+{
+ return s.Substring(0,1).ToUpper()+s.Substring(1).ToUpper();
+}
+#endregion
+#region 骆驼命名法
+public string ToCamel(string s)
+{
+ return s.Substring(0,1).ToLower()+s.Substring(1).ToLower();
+}
+#endregion
+
+#region 得到字段的汉字描述
+public string GetDesc(string s)
+{
+	
+	DataTable DT=new DataTable();
+
+	string retstr;
+	string tabowner;
+	string tabname;
+	
+	retstr="Unknown";
+	tabowner=this.SourceTable.Owner;
+	tabname=this.SourceTable.Name;
+	
+	return retstr;
+}
+#endregion
+
+#region 得到字段的是否启用
+public bool IsInUse(string s)
+{
+	if (s=="ATBH")
+	{
+		return false;
+		}
+	else
+	{
+		return true;
+		}
+	
+}
+#endregion
+
+
+#region 获取实体类类名
+public string GetClassName()
+{
+ string s=this.SourceTable.Name;
+ 
+		return s.ToUpper();
+		
+	if (s.StartsWith("CYKJ_") )
+	{
+		return s.Substring(5,s.Length-5).ToUpper();
+	}
+	else
+	{
+		return s.ToUpper();
+	}
+}
+
+public string GetObjectName()
+{
+ string s=this.SourceTable.Name;
+ 
+		return s.ToUpper();
+	if (s.StartsWith("AQWT_") ||s.StartsWith("JCSJ_") )
+	{
+		return s.Substring(5,s.Length-5).ToLower();
+	}
+	else
+	{
+		return s.ToLower();
+	}
+}
+
+public string GetClassName(TableSchema table)
+{
+ string s=table.Name;
+ if(s.EndsWith("s"))
+ {
+  s=s.Substring(0,s.Length-1);
+ }
+ return this.ToPascal(s);
+}
+#endregion
+
+#region 获取文件名
+public override string GetFileName()
+{
+ return this.GetClassName()+".cs";
+}
+#endregion
+
+#region 获取列的数据类型(C#)
+public string GetCSharpVariableType(ColumnSchema column)
+{
+	if(column.NativeType.ToString() =="BLOB" || column.NativeType.ToString()=="CLOB") 
+	{
+		return "string";
+	}
+	
+	if (column.Name.EndsWith("TypeCode")) return column.Name;
+	
+	switch (column.DataType)
+	{
+		case DbType.AnsiString: return "string";
+		case DbType.AnsiStringFixedLength: return "string";
+		case DbType.Binary: return "byte[]";
+		case DbType.Boolean: return "bool";
+		case DbType.Byte: return "byte";
+		case DbType.Currency: return "decimal";
+		case DbType.Date: return "DateTime";
+		case DbType.DateTime: return "DateTime";
+		case DbType.Decimal: return "decimal";
+		case DbType.Double: return "double";
+		case DbType.Guid: return "Guid";
+		case DbType.Int16: return "short";
+		case DbType.Int32: return "int";
+		case DbType.Int64: return "long";
+		case DbType.Object: return "object";
+		case DbType.SByte: return "sbyte";
+		case DbType.Single: return "float";
+		case DbType.String: return "string";
+		case DbType.StringFixedLength: return "string";
+		case DbType.Time: return "TimeSpan";
+		case DbType.UInt16: return "ushort";
+		case DbType.UInt32: return "uint";
+		case DbType.UInt64: return "ulong";
+		case DbType.VarNumeric: return "decimal";
+		default:
+		{
+		return "__UNKNOWN__" + column.NativeType;
+		}
+	}
+}
+
+#endregion
+
+#region 获取列的数据类型(oracle)
+public string GetOracleVariableType(ColumnSchema column)
+{
+	if(column.NativeType.ToString() =="BLOB" ) 
+	{
+		return "BLOB";
+	}
+	if(column.NativeType.ToString()=="CLOB") 
+	{
+		return "CLOB";
+	}
+
+ 	if (column.Name.EndsWith("TypeCode")) return column.Name;
+ 
+	switch (column.DataType)
+	{
+		case DbType.AnsiString: return "VARCHAR2";
+		case DbType.AnsiStringFixedLength: return "VARCHAR2";
+		case DbType.Binary: return "byte[]";
+		case DbType.Boolean: return "bool";
+		case DbType.Byte: return "byte";
+		case DbType.Currency: return "decimal";
+		case DbType.Date: return "DATE";
+		case DbType.DateTime: return "DATE";
+		case DbType.Decimal: return "decimal";
+		case DbType.Double: return "NUMBER";
+		case DbType.Guid: return "Guid";
+		case DbType.Int16: return "NUMBER";
+		case DbType.Int32: return "NUMBER";
+		case DbType.Int64: return "NUMBER";
+		case DbType.Object: return "object";
+		case DbType.SByte: return "sbyte";
+		case DbType.Single: return "float";
+		case DbType.String: return "VARCHAR2";
+		case DbType.StringFixedLength: return "VARCHAR2";
+		case DbType.Time: return "DATE";
+		case DbType.UInt16: return "NUMBER";
+		case DbType.UInt32: return "NUMBER";
+		case DbType.UInt64: return "NUMBER";
+		case DbType.VarNumeric: return "decimal";
+		default:
+		{
+		return "__UNKNOWN__" + column.NativeType;
+		}
+	}
+}
+
+#endregion
+
+#region 获取列的数据类型(IDataType)
+public string GetIDataType(ColumnSchema column)
+{
+	if(column.NativeType.ToString() =="BLOB" ) 
+	{
+		return "Blob";
+	}
+	if(column.NativeType.ToString()=="CLOB") 
+	{
+		return "Clob";
+	}
+
+	if (column.Name.EndsWith("TypeCode")) return column.Name;
+ 
+	switch (column.DataType)
+	{
+		case DbType.AnsiString: return "VarChar";
+		case DbType.AnsiStringFixedLength: return "VarChar";
+		case DbType.Binary: return "byte[]";
+		case DbType.Boolean: return "Bit";
+		case DbType.Byte: return "byte";
+		case DbType.Currency: return "decimal";
+		case DbType.Date: return "DateTime";
+		case DbType.DateTime: return "DateTime";
+		case DbType.Decimal: return "decimal";
+		case DbType.Double: return "Number";
+		case DbType.Guid: return "Guid";
+		case DbType.Int16: return "Number";
+		case DbType.Int32: return "Number";
+		case DbType.Int64: return "Number";
+		case DbType.Object: return "object";
+		case DbType.SByte: return "sbyte";
+		case DbType.Single: return "float";
+		case DbType.String: return "VarChar";
+		case DbType.StringFixedLength: return "VarChar";
+		case DbType.Time: return "DateTime";
+		case DbType.UInt16: return "Number";
+		case DbType.UInt32: return "Number";
+		case DbType.UInt64: return "Number";
+		case DbType.VarNumeric: return "decimal";
+		default:
+		{
+		return "__UNKNOWN__" + column.NativeType;
+		}
+	}
+}
+
+#endregion
+
+#region 设置缺省值 GetDefaultValue(ColumnSchema column)
+public string GetDefaultValue(ColumnSchema column)
+{
+	if((bool)column.IsPrimaryKeyMember == true)
+	{
+		return "0";
+	}
+ switch (column.DataType)
+ {
+  case DbType.AnsiString: return "\"\"";
+  case DbType.AnsiStringFixedLength: return "\"\"";
+  case DbType.Binary: return "null";
+  case DbType.Boolean: return "false";
+  case DbType.Byte: return "0";
+  case DbType.Currency: return "0.0";
+  case DbType.Date: return "DateTime.Parse("+"\"1900-01-01\""+")";
+  case DbType.DateTime: return "DateTime.Parse("+"\"1900-01-01\""+")";
+  case DbType.Decimal: return "0.0";
+  case DbType.Double: return "0.0";
+  case DbType.Int16: return "0";
+  case DbType.Int32: return "0";
+  case DbType.Int64: return "0";
+  case DbType.Object: return "null";
+  case DbType.SByte: return "0";
+  case DbType.Single: return "0.0";
+  case DbType.String: return "\"\"";
+  case DbType.StringFixedLength: return "\"\"";
+  case DbType.UInt16: return "0";
+  case DbType.UInt32: return "0";
+  case DbType.UInt64: return "0";
+  case DbType.VarNumeric: return "0.0";
+  default:
+  {
+   return "__UNKNOWN__" + column.NativeType;
+  }
+ }
+}
+#endregion
+
+#region 获取默认控件名称 GetDefaultControlName(ColumnSchema column)
+public string GetDefaultControlName(ColumnSchema column)
+{
+	if((bool)column.IsPrimaryKeyMember == true)
+	{
+		return "hidden"+column.Name;
+	}
+ switch (column.DataType)
+ {
+  case DbType.AnsiString: return "txt"+column.Name;
+  case DbType.AnsiStringFixedLength: return "txt"+column.Name;
+  case DbType.Binary: return "txt"+column.Name;
+  case DbType.Boolean: return "ddl"+column.Name;
+  case DbType.Byte: return "txt"+column.Name;
+  case DbType.Currency: return "txt"+column.Name;
+  case DbType.Date: return "dth"+column.Name;
+  case DbType.DateTime: return "dth"+column.Name;
+  case DbType.Decimal: return "txt"+column.Name;
+  case DbType.Double: return "txt"+column.Name;
+  case DbType.Int16: return "txt"+column.Name;
+  case DbType.Int32: return "txt"+column.Name;
+  case DbType.Int64: return "txt"+column.Name;
+  case DbType.Object: return "txt"+column.Name;
+  case DbType.SByte: return "txt"+column.Name;
+  case DbType.Single: return "txt"+column.Name;
+  case DbType.String: return "txt"+column.Name;
+  case DbType.StringFixedLength: return "txt"+column.Name;
+  case DbType.UInt16: return "txt"+column.Name;
+  case DbType.UInt32: return "txt"+column.Name;
+  case DbType.UInt64: return "txt"+column.Name;
+  case DbType.VarNumeric: return "txt"+column.Name;
+  default:
+  {
+   return "__UNKNOWN__" + column.NativeType;
+  }
+ }
+}
+#endregion
+
+#region 返回默认控件值 GetDefaultControlValue(ColumnSchema column)
+public string GetDefaultControlValue(ColumnSchema column)
+{
+	if((bool)column.IsPrimaryKeyMember == true)
+	{
+		if(column.DataType==DbType.Int16 || column.DataType==DbType.Int32 || column.DataType==DbType.Int64 ||column.DataType==DbType.UInt16 || column.DataType==DbType.UInt32 || column.DataType==DbType.UInt64 || column.DataType==DbType.VarNumeric )
+		{
+			return "int.Parse(this.hidden"+column.Name + ".Value.Trim())";
+		}
+		else
+		{
+			return "this.hidden"+column.Name + ".Value.Trim()";
+		}
+	}
+ switch (column.DataType)
+ {
+  case DbType.AnsiString: return "this.txt"+column.Name + ".Text";
+  case DbType.AnsiStringFixedLength: return "this.txt"+column.Name + ".Text";
+  case DbType.Binary: return "this.txt"+column.Name + ".Text";
+  case DbType.Boolean: return "this.ddl"+column.Name + ".SelectedValue";
+  case DbType.Byte: return "this.txt"+column.Name + ".Text";
+  case DbType.Currency: return "this.txt"+column.Name + ".Text";
+  case DbType.Date: return "DateTime.Parse(this.dth"+column.Name+".Text.ToString())";
+  case DbType.DateTime: return "DateTime.Parse(this.dth"+column.Name+".Text.ToString())";
+  case DbType.Decimal: return "decimal.Parse(this.txt"+column.Name + ".Text.Trim())";
+  case DbType.Double: return "double.Parse(this.txt"+column.Name + ".Text.Trim())";
+  case DbType.Int16: return "int.Parse(this.txt"+column.Name + ".Text.Trim())";
+  case DbType.Int32: return "int.Parse(this.txt"+column.Name + ".Text.Trim())";
+  case DbType.Int64: return "int.Parse(this.txt"+column.Name + ".Text.Trim())";
+  case DbType.Object: return "this.txt"+column.Name + ".Text";
+  case DbType.SByte: return "this.txt"+column.Name + ".Text";
+  case DbType.Single: return "this.txt"+column.Name + ".Text";
+  case DbType.String: return "this.txt"+column.Name + ".Text";
+  case DbType.StringFixedLength: return "this.txt"+column.Name + ".Text.Trim())";
+  case DbType.UInt16: return "int.Parse(this.txt"+column.Name + ".Text.Trim())";
+  case DbType.UInt32: return "int.Parse(this.txt"+column.Name + ".Text.Trim())";
+  case DbType.UInt64: return "int.Parse(this.txt"+column.Name + ".Text.Trim())";
+  case DbType.VarNumeric: return "int.Parse(this.txt"+column.Name + ".Text.Trim())";
+  default:
+  {
+   return "__UNKNOWN__" + column.NativeType;
+  }
+ }
+}
+#endregion
+
+#region 设置默认控件值 SetDefaultControlValue(ColumnSchema column)
+public string SetDefaultControlValue(ColumnSchema column)
+{
+	if((bool)column.IsPrimaryKeyMember == true)
+	{
+		return "this.hidden"+column.Name + ".Value";
+	}
+ switch (column.DataType)
+ {
+  case DbType.AnsiString: return "this.txt"+column.Name + ".Text";
+  case DbType.AnsiStringFixedLength: return "this.txt"+column.Name + ".Text";
+  case DbType.Binary: return "this.txt"+column.Name + ".Text";
+  case DbType.Boolean: return "this.ddl"+column.Name + ".SelectedValue";
+  case DbType.Byte: return "this.txt"+column.Name + ".Text";
+  case DbType.Currency: return "this.txt"+column.Name + ".Text";
+  case DbType.Date: return "this.dth"+column.Name + ".SelectedDate";
+  case DbType.DateTime: return "this.dth"+column.Name + ".SelectedDate";
+  case DbType.Decimal: return "this.txt"+column.Name + ".Text";
+  case DbType.Double: return "this.txt"+column.Name + ".Text";
+  case DbType.Int16: return "this.txt"+column.Name + ".Text";
+  case DbType.Int32: return "this.txt"+column.Name + ".Text";
+  case DbType.Int64: return "this.txt"+column.Name + ".Text";
+  case DbType.Object: return "this.txt"+column.Name + ".Text";
+  case DbType.SByte: return "this.txt"+column.Name + ".Text";
+  case DbType.Single: return "this.txt"+column.Name + ".Text";
+  case DbType.String: return "this.txt"+column.Name + ".Text";
+  case DbType.StringFixedLength: return "this.txt"+column.Name + ".Text";
+  case DbType.UInt16: return "this.txt"+column.Name + ".Text";
+  case DbType.UInt32: return "this.txt"+column.Name + ".Text";
+  case DbType.UInt64: return "this.txt"+column.Name + ".Text";
+  case DbType.VarNumeric: return "this.txt"+column.Name + ".Text";
+  default:
+  {
+   return "__UNKNOWN__" + column.NativeType;
+  }
+ }
+}
+#endregion
+
+#region 返回默认控件代码  GetDefaultControl(ColumnSchema column)
+public string GetDefaultControl(ColumnSchema column)
+{
+	if((bool)column.IsPrimaryKeyMember == true)
+	{
+		return "<f:HiddenField ID=\""+GetDefaultControlName(column)+"\" runat=\"server\" value=\"0\" />";
+	}
+	switch (column.DataType)
+	{
+		case DbType.AnsiString: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\" runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.AnsiStringFixedLength: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.Binary: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\" runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.Boolean: return "<f:DropDownList ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\"></f:DropDownList>";
+		case DbType.Byte: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.Currency: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.Date: return "<f:DatePicker ID=\""+GetDefaultControlName(column)+"\" runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:DatePicker>";
+		case DbType.DateTime: return "<f:DatePicker ID=\""+GetDefaultControlName(column)+"\" runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:DatePicker>";
+		case DbType.Decimal: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\"Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.Double: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\" runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.Int16: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.Int32: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.Int64: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\" runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.Object: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.SByte: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.Single: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.String: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.StringFixedLength: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.UInt16: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.UInt32: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.UInt64: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		case DbType.VarNumeric: return "<f:TextBox ID=\""+GetDefaultControlName(column)+"\"  runat=\"server\" Label=\""+GetDefaultControlName(column)+ "\"></f:TextBox>";
+		default:
+		{
+		return "__UNKNOWN__" + column.NativeType;
+		}
+	}
+}
+#endregion
+
+
+#region 获得变量名
+public string GetVariableName(ColumnSchema column)
+{
+	return "v_"+column.Name.ToUpper();
+}
+#endregion
+
+#region 获得变量名2
+public string GetVariableName2(ColumnSchema column)
+{
+	
+	if(column.NativeType.ToString() =="BLOB" || column.NativeType.ToString()=="CLOB") 
+	{
+		return "System.Text.Encoding.Default.GetBytes(v_"+column.Name.ToUpper()+")";
+	}
+	
+	return "v_"+column.Name.ToUpper();
+	
+}
+#endregion
+
+#region 获得实体类私有变量名
+public string GetModelVarName(ColumnSchema column)
+{
+	
+	return "_"+column.Name.ToUpper();
+	
+}
+#endregion
+
+#region 设置默认开头
+public string GetDefaultPix(ColumnSchema column)
+{
+ switch (column.DataType)
+ {
+  case DbType.AnsiString: return "s";
+  case DbType.AnsiStringFixedLength: return "s";
+  case DbType.Binary: return "b";
+  case DbType.Boolean: return "b";
+  case DbType.Byte: return "bs";
+  case DbType.Currency: return "c";
+  case DbType.Date: return "dt";
+  case DbType.DateTime: return "dt";
+  case DbType.Decimal: return "d";
+  case DbType.Double: return "d";
+  case DbType.Int16: return "i";
+  case DbType.Int32: return "i";
+  case DbType.Int64: return "i";
+  case DbType.Object: return "obj";
+  case DbType.SByte: return "b";
+  case DbType.Single: return "d";
+  case DbType.String: return "s";
+  case DbType.StringFixedLength: return "s";
+  case DbType.UInt16: return "i";
+  case DbType.UInt32: return "i";
+  case DbType.UInt64: return "i";
+  case DbType.VarNumeric: return "f";
+  default:
+  {
+   return "__UNKNOWN__" + column.NativeType;
+  }
+ }
+}
+#endregion
+
+#region 获取外键类名
+public string GetFKClassName(ColumnSchema column)
+{
+ foreach(TableKeySchema key in this.SourceTable.ForeignKeys)
+ {
+ foreach(MemberColumnSchema fk in key.ForeignKeyMemberColumns)
+  {
+  if(fk.Name==column.Name)
+  {
+    return this.GetClassName(key.PrimaryKeyTable);
+   }
+ }
+ }
+ return "";
+}
+#endregion
+
+#region 获取主键类名
+// 根据表对象获得主键的类型
+public string GetPrimaryKeyType(TableSchema table)
+{
+    if (table.PrimaryKey != null)
+    {
+        if (table.PrimaryKey.MemberColumns.Count == 1)
+        {
+            return GetCSharpVariableType(table.PrimaryKey.MemberColumns[0]);
+        }
+        else
+        {
+            throw new ApplicationException("此模板只支持单个列的主键");
+        }
+    }
+    else
+    {
+        throw new ApplicationException("此模板需要有主键的表");
+    }
+}
+
+// 根据表对象获得主键的名称(原始)
+public string GetPrimaryKeyName(TableSchema table)
+{
+    if (table.PrimaryKey != null)
+    {
+        if (table.PrimaryKey.MemberColumns.Count == 1)
+        {
+            return ToPascal(table.PrimaryKey.MemberColumns[0].Name);
+        }
+        else
+        {
+            throw new ApplicationException("此模板只支持单个列的主键");
+        }
+    }
+    else
+    {
+        throw new ApplicationException("此模板需要有主键的表");
+    }
+}
+
+// 根据表对象获得主键的字段名(骆驼命名)
+public string GetPrimaryKeyFieldName(TableSchema table)
+{
+    return ToPascal(GetPrimaryKeyName(table));
+}
+
+// 根据表对象获得主键的属性名(帕斯卡命名)
+public string GetPrimaryKeyPropertyName(TableSchema table)
+{
+    return ToPascal(GetPrimaryKeyName(table));
+}
+#endregion
+
+#region 获取主键名 不存在主键返回第一个 GetPrimaryKeyName2(TableSchema table)
+public string GetPrimaryKeyName2(TableSchema table)
+{
+	if(table.PrimaryKey.MemberColumns.Count>0)
+	{
+		return table.PrimaryKey.MemberColumns[0].Name.ToUpper();
+	}
+	else
+	{
+		return table.Columns[0].Name.ToUpper();
+	}
+}
+#endregion
+
+#region 获取主键名 不存在主键返回第一个 GetPrimaryKeyNameValue2(TableSchema table)
+public DbType GetPrimaryKeyNameValue2(TableSchema table)
+{
+	if(table.PrimaryKeys.Count>0)
+	{
+		return table.PrimaryKey.MemberColumns[0].DataType;
+	}
+	else
+	{
+		return table.Columns[0].DataType;
+	}
+}
+#endregion
+
+#region 输出
+public void WriteSpecchar(string input)
+{
+	if (input=="i")
+	{
+		Response.Write("%>");
+	}
+	else
+	{
+	Response.Write(input);
+	}
+}
+#endregion
+
+</script>
+
+
+

@@ -1,0 +1,168 @@
+﻿<%--
+Name:存储过程类
+Author: yingchun.han
+Description:SQLServer Update Procdure
+--%>
+
+<%@ CodeTemplate Language="C#" TargetLanguage="T-SQL" Description="Generate a update stored procedure." Encoding="UTF-8" %>
+<%@ Assembly Name="SchemaExplorer" %>
+<%@ Import Namespace="SchemaExplorer" %>
+<%@ Property Name="SourceTable" Type="SchemaExplorer.TableSchema" Category="Context" Description="Table that the stored procedures should be based on." %>
+
+-- ================================================
+-- generated  using code smith4.1
+-- CYKJ
+-- ================================================
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		<HYC>
+-- Create date: <2011-06-05>
+-- Description:	<query_<%= SourceTable.Name %>>
+-- =============================================
+
+CREATE PROCEDURE 
+[dbo].[query_<%= SourceTable.Name %>]
+(
+  @yhdlm VARCHAR(20), ---用户登陆名
+  @iTotalCount  INT  OUTPUT, ---记录数
+  @sStartIndex INT,  ---开始索引
+  @sPerPageSize INT, ---页大小
+  --@DataRowID VARCHAR(50), ---数据行ROWID号,
+<% for (int i=0; i<SourceTable.Columns.Count; i++) {%>
+  <%if(((bool)SourceTable.Columns[i].ExtendedProperties["CS_IsIdentity"].Value) == false || 1==1 ){%>
+  <%= GetSqlParameterStatement(SourceTable.Columns[i]) %> ,
+  <% } %>
+<% }%>
+  @StartDate datetime,
+  @EndDate datetime
+)
+AS
+DECLARE @iStartRow  INT,
+ @iEndRow  INT
+BEGIN
+    SET NOCOUNT ON
+	IF @iTotalCount=-1
+    BEGIN
+        SET @iTotalCount = (SELECT  COUNT(*) FROM <%= SourceTable.Name %>
+        WHERE
+		<% for (int i=0; i<SourceTable.Columns.Count; i++) {%>
+			<%if(((bool)SourceTable.Columns[i].ExtendedProperties["CS_IsIdentity"].Value) == false || 1==1){%>
+			<%if (SourceTable.Columns[i].NativeType.ToUpper()=="VARCHAR"){%>
+			(@<%=SourceTable.Columns[i].Name%> IS NULL OR @<%=SourceTable.Columns[i].Name%>='' OR <%=SourceTable.Columns[i].Name%> LIKE '%'+@<%=SourceTable.Columns[i].Name%>+'%') AND
+			<% }%>
+			<%else if (SourceTable.Columns[i].NativeType.ToUpper()=="NUMERIC" || SourceTable.Columns[i].NativeType.ToUpper()=="INT"){%>
+			(@<%=SourceTable.Columns[i].Name%> =0 OR <%=SourceTable.Columns[i].Name%>=@<%=SourceTable.Columns[i].Name%>)  AND
+			<% }%>
+			<%else if (SourceTable.Columns[i].NativeType.ToUpper()=="DATETIME"){%>
+			(@<%=SourceTable.Columns[i].Name%> ='1900-1-1 0:00:00' OR <%=SourceTable.Columns[i].Name%>=@<%=SourceTable.Columns[i].Name%>) AND
+			<% }%>
+			<% else{%>
+			(@<%=SourceTable.Columns[i].Name%> IS NULL OR <%=SourceTable.Columns[i].Name%>=@<%=SourceTable.Columns[i].Name%>) AND
+			<% }%>
+			<% }%>
+		<% }%>
+			--自己根据实际需求修改时间判断
+			--GetDate() between @StartDate and @EndDate AND
+			1=1
+		);
+    END
+    SET @iStartRow = @sStartIndex+1;
+    SET @iEndRow = @sStartIndex + @sPerPageSize;
+    IF @iEndRow >@iTotalCount
+    BEGIN
+        SET @iEndRow = @iTotalCount;
+    END 
+	
+	SELECT A.* FROM
+        (SELECT 
+        ROW_NUMBER() OVER (ORDER BY <%=SourceTable.PrimaryKey.MemberColumns[0].Name%>) AS ROW_ID,
+        <% for (int i=0; i<SourceTable.Columns.Count; i++) {%>
+  		<%if(((bool)SourceTable.Columns[i].ExtendedProperties["CS_IsIdentity"].Value) == false || 1==1){%>
+  		<%=SourceTable.Columns[i].Name %> <% if (i<SourceTable.Columns.Count-1) {%>,<% } %>
+  		<% }%>
+		<% }%> 
+        FROM <%=SourceTable.Name %> 
+        WHERE
+        <% for (int i=0; i<SourceTable.Columns.Count; i++) {%>
+			<%if(((bool)SourceTable.Columns[i].ExtendedProperties["CS_IsIdentity"].Value) == false || 1==1){%>
+			<%if (SourceTable.Columns[i].NativeType.ToUpper()=="VARCHAR"){%>
+			(@<%=SourceTable.Columns[i].Name%> IS NULL OR @<%=SourceTable.Columns[i].Name%>='' OR <%=SourceTable.Columns[i].Name%> LIKE '%'+@<%=SourceTable.Columns[i].Name%>+'%') AND
+			<% }%>
+			<%else if (SourceTable.Columns[i].NativeType.ToUpper()=="NUMERIC" || SourceTable.Columns[i].NativeType.ToUpper()=="INT"){%>
+			(@<%=SourceTable.Columns[i].Name%> =0 OR <%=SourceTable.Columns[i].Name%>=@<%=SourceTable.Columns[i].Name%>) AND
+			<% }%>
+			<%else if (SourceTable.Columns[i].NativeType.ToUpper()=="DATETIME"){%>
+			(@<%=SourceTable.Columns[i].Name%> ='1900-1-1 0:00:00' OR <%=SourceTable.Columns[i].Name%>=@<%=SourceTable.Columns[i].Name%>) AND
+			<% }%>
+			<% else{%>
+			(@<%=SourceTable.Columns[i].Name%> IS NULL OR <%=SourceTable.Columns[i].Name%>=@<%=SourceTable.Columns[i].Name%>) AND
+			<% }%>
+			<% }%>
+		<% }%>
+			--自己根据实际需求修改时间判断
+			--GetDate() between @StartDate and @EndDate AND
+			1=1
+        ) A
+        WHERE ROW_ID BETWEEN @iStartRow AND @iEndRow;
+	
+	
+END
+
+<script runat="template">
+
+#region Pascal命名法
+public string ToPascal(string s)
+{
+ return s.Substring(0,1).ToUpper()+s.Substring(1).ToUpper();
+}
+#endregion
+
+#region 骆驼命名法
+public string ToCamel(string s)
+{
+ return s.Substring(0,1).ToLower()+s.Substring(1).ToLower();
+}
+#endregion
+
+#region 返回字段
+public string FieldsToEnglish(string s)
+{
+	return s;
+}
+#endregion
+
+#region 根据列名获取SQL参数
+public string GetSqlParameterStatement(ColumnSchema column)
+{
+	string param="";
+	
+    	param = "@" + column.Name + " " +column.NativeType;
+    	switch(column.DataType)
+		{
+			case DbType.Decimal:
+			{
+				param += "(" + column.Precision + "," + column.Scale + ")";
+				break;
+			}
+			case DbType.AnsiString:
+			case DbType.AnsiStringFixedLength:
+			case DbType.String:
+			case DbType.StringFixedLength:
+			{
+				param += "(" + (column.Size==-1 ? "MAX" : column.Size.ToString()) + ")";
+				break;
+			}
+			default:
+			{
+				break;
+			}
+		}
+	
+    return param;
+}
+#endregion
+
+</script>
